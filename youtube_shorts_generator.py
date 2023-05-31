@@ -1,22 +1,23 @@
 import re
+from bs4 import BeautifulSoup
 import fandom
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 
-def main():
+def get_viable_pages():
     fandom_type = 'fallout'
     fandom.set_wiki(fandom_type)
 
-    selected_pages = []
+    viable_pages = []
     # Get a list of 10 random site pages 
     # Pages are returned as a tuple like (title, page_id)
-    r_pages = fandom.random(10)
-    #r_pages = [('IIPIT.MSG', 999)]
+    r_pages = fandom.random(30)
     # Loop through list and find potential candidates
     for p in r_pages:
         # Pages should be long enough for a 30 second video, and should not be about game files
         # 2000 characters seems like a good minimum
         try:
             page = fandom.page(p[0])
+            output_page = {}
             # Some pages have the characters "v · d · e" for View Template, Discussion, Edit
             # The text after this delimiter can be very long with many links to other semi-related articles
             # Unfortuantely this text is captured in whatever final section appears on the page, after the scrape
@@ -31,19 +32,50 @@ def main():
             if re.match(r".+\..{2,}", page.title):
                 raise ValueError('File Page')
             
-            print('---Page:', page.title, 'Actual length', len(page_body))
-            print(page.url)
+            print('Page Suitable!')
 
-            s = page.sections
-            for section in s:
-                section_body = page.section(section).split('v · d · e')[0]
-                print(section, 'length', len(section_body))
-                #print(section_body)
-            selected_pages.append(page)
+            # Start adding to output file object
+            output_page.update({'title': page.title, 'url': page.url, 'sections': page.sections, 'summary': page.summary})
+            output_page['plain_text'] = ''#page_body
+            output_page['section_text'] = {}
+            for s in page.sections:
+                output_page['section_text'][s] = ''#page.section(s).split('v · d · e')[0]
+            
+            output_page['images'] = []
+            for i in page.images:
+                if 'icon' not in i.lower():
+                    output_page['images'].append(i)
+        
+            # Add additional scrapped information to output page
+            # Categories
+            soup = BeautifulSoup(page.html, 'html.parser')
+            cats = soup.select('[class*="category"]')
+            output_page['categories'] = list(map(lambda e: e.text.replace('\n', ''), cats))
+
+            # Audio file urls
+            audio = soup.find_all('audio')
+            output_page['audio'] = [a['src'] for a in audio]
+
+            # Notes from top of aticle
+            notes = soup.find_all('[role="note"]')
+            output_page['notes'] = list(map(lambda n: n.text.replace('\n', ''), notes))
+
+            viable_pages.append(output_page)
         except Exception as e:
             print(e)
-        print('\n')
-    
-    for p in selected_pages:
-        print(p.title)
+    # Return the list of viable pages
+    return viable_pages
+
+def main():
+    pages = get_viable_pages()
+    print('\n', len(pages), 'found')
+    for p in pages: 
+        print(p['url'])
+        print(p['notes'])
+
+    # Idea's for choosing the best article:
+    # Drop reference section, count sections
+    # count images without icons
+    # Count audio files
+
 main()
