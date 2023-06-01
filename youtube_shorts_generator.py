@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 from bs4 import BeautifulSoup
 import fandom
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
@@ -10,7 +11,8 @@ def get_viable_pages():
     viable_pages = []
     # Get a list of 10 random site pages 
     # Pages are returned as a tuple like (title, page_id)
-    r_pages = fandom.random(30)
+    r_pages = fandom.random(5)
+    #r_pages = [('Paul_(Fallout)', 999)]
     # Loop through list and find potential candidates
     for p in r_pages:
         # Pages should be long enough for a 30 second video, and should not be about game files
@@ -36,16 +38,11 @@ def get_viable_pages():
 
             # Start adding to output file object
             output_page.update({'title': page.title, 'url': page.url, 'sections': page.sections, 'summary': page.summary})
-            output_page['plain_text'] = ''#page_body
+            output_page['plain_text'] = page_body
             output_page['section_text'] = {}
             for s in page.sections:
-                output_page['section_text'][s] = ''#page.section(s).split('v · d · e')[0]
-            
-            output_page['images'] = []
-            for i in page.images:
-                if 'icon' not in i.lower():
-                    output_page['images'].append(i)
-        
+                output_page['section_text'][s] = page.section(s).split('v · d · e')[0]
+                    
             # Add additional scrapped information to output page
             # Categories
             soup = BeautifulSoup(page.html, 'html.parser')
@@ -60,22 +57,47 @@ def get_viable_pages():
             notes = soup.find_all('[role="note"]')
             output_page['notes'] = list(map(lambda n: n.text.replace('\n', ''), notes))
 
+            imgs = soup.find_all('img')
+            output_page['images'] = [i['src'] for i in imgs if 
+                '.net/'+fandom_type in i['src'] 
+                and 'icon' not in i['src']
+                and 'site-logo' not in i['src'].lower()]
+
             viable_pages.append(output_page)
         except Exception as e:
             print(e)
     # Return the list of viable pages
     return viable_pages
 
-def main():
-    pages = get_viable_pages()
-    print('\n', len(pages), 'found')
-    for p in pages: 
-        print(p['url'])
-        print(p['notes'])
-
+def identify_best_page(pages):
+    df = pd.DataFrame({'title': [], 'length': [], 'bg_length': [], 'secions': [], 'images': [], 'audio': []})
+    for p in pages:
+        #section_concat = ''.join(v for k, v in p['section_text'].items() if k.lower() != 'references')
+        #overview_length = len(p['plain_text']) - len(section_concat)
+        background_length = len(p['section_text'].get('Background', ''))
+        new_row = pd.DataFrame({
+            'title': [p['title']], 
+            'length': [len(p['plain_text'])], 
+            'bg_length': [background_length], 
+            'secions': [len(p['sections'])], 
+            'images': [len(p['images'])],
+            'audio': [len(p['audio'])]
+        })
+        df = pd.concat([df, new_row], ignore_index=True)
+    print(df)
     # Idea's for choosing the best article:
     # Drop reference section, count sections
     # count images without icons
     # Count audio files
+
+    # Compare total length vs concat of articles minus ref, this is the summary length
+    # check background length
+    #print(pages)
+
+    
+def main():
+    pages = get_viable_pages()
+    print('\n', len(pages), 'found')
+    identify_best_page(pages)
 
 main()
