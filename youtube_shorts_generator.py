@@ -10,15 +10,13 @@ def get_viable_pages():
 
     viable_pages = []
     # Get a list of 10 random site pages 
-    # Pages are returned as a tuple like (title, page_id)
-    r_pages = fandom.random(5)
-    #r_pages = [('Paul_(Fallout)', 999)]
-    # Loop through list and find potential candidates
-    for p in r_pages:
+    while len(viable_pages) < 2:
+        # Pages are returned as a tuple like (title, page_id)
+        #r_pages = [('Paul_(Fallout)', 999)]
+        p = fandom.random(1)[0]
         # Pages should be long enough for a 30 second video, and should not be about game files
-        # 2000 characters seems like a good minimum
         try:
-            page = fandom.page(p[0])
+            page = fandom.page(p)
             output_page = {}
             # Some pages have the characters "v · d · e" for View Template, Discussion, Edit
             # The text after this delimiter can be very long with many links to other semi-related articles
@@ -70,15 +68,17 @@ def get_viable_pages():
     return viable_pages
 
 def identify_best_page(pages):
-    df = pd.DataFrame({'title': [], 'length': [], 'bg_length': [], 'secions': [], 'images': [], 'audio': []})
+    df = pd.DataFrame({'title': [], 'length': [], 'first_section_title': [],'first_section_length': [], 'secions': [], 'images': [], 'audio': []})
     for p in pages:
         #section_concat = ''.join(v for k, v in p['section_text'].items() if k.lower() != 'references')
         #overview_length = len(p['plain_text']) - len(section_concat)
         background_length = len(p['section_text'].get('Background', ''))
+        first_section_length = len(p['section_text'].get(p['sections'][0], ''))
         new_row = pd.DataFrame({
             'title': [p['title']], 
             'length': [len(p['plain_text'])], 
-            'bg_length': [background_length], 
+            'first_section_title': [p['sections'][0]],
+            'first_section_length': [first_section_length], 
             'secions': [len(p['sections'])], 
             'images': [len(p['images'])],
             'audio': [len(p['audio'])]
