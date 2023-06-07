@@ -1,7 +1,9 @@
 import re
+import os
 import pandas as pd
 from bs4 import BeautifulSoup
 import fandom
+import questionary
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 
 def get_viable_pages():
@@ -11,7 +13,7 @@ def get_viable_pages():
     pages = []
     viable_pages = 0
     # Get a list of 10 random site pages 
-    while viable_pages < 5:
+    while viable_pages < 2:
         # Pages are returned as a tuple like (title, page_id)
         #r_pages = [('Paul_(Fallout)', 999)]
         p = fandom.random(1)[0]
@@ -27,11 +29,11 @@ def get_viable_pages():
             page_body = page.plain_text.split(vde_delimiter)[0]
             
             short_page = 'Expansion required' in page_body or len(page_body) < 1200
-            english_lang = page.language == 'en'
+            non_english = page.language != 'en'
             # Find pages with titles like 'abc.mp3' to avoid file related pages
             file_page = re.match(r".+\..{2,}", page.title) != None
 
-            if (not short_page and english_lang and not file_page):
+            if (not short_page and not non_english and not file_page):
                 viable_pages += 1
                 print('Page Suitable!')
             else:
@@ -43,7 +45,7 @@ def get_viable_pages():
                 'sections': page.sections, 
                 'summary': page.summary,
                 'short_page': short_page,
-                'english_lang': english_lang,
+                'non_english': non_english,
                 'file_page': file_page,
                 'plain_text': page_body})
 
@@ -80,9 +82,10 @@ def get_viable_pages():
 def get_pages_df(pages):
     df = pd.DataFrame({
         'title': [],
+        'url': [],
         'first_section_title': [],
         'categories': [],
-        'english_lang': [],
+        'non_english': [],
         'file_page': [],
         'short_page': [],
         'length': [],
@@ -106,10 +109,11 @@ def get_pages_df(pages):
         
         new_row = pd.DataFrame({
             'title': [p['title']], 
+            'url': [p['url']], 
             'first_section_title': [first_section_title],
             'categories':['|'.join(p['categories'])],
             'length': [len(p['plain_text'])], 
-            'english_lang': [p['english_lang'] * 1],
+            'non_english': [p['non_english'] * 1],
             'file_page': [p['file_page'] * 1],
             'short_page': [p['short_page'] * 1],
             'first_section_length': [first_section_length], 
@@ -121,10 +125,24 @@ def get_pages_df(pages):
         df = pd.concat([df, new_row], ignore_index=True)
     return df
 
-    
+def classify_df(df):
+    print('\nNow you will classify the rows in this DF on viability')
+    ratings = []
+    for i, r in df.iterrows():
+        print(r)
+        question = questionary.select(
+            'How would you rate ' + r['title'],
+            choices=['unusable', 'bad', 'fine', 'good', 'viral'])
+        rating = question.ask()
+        ratings.append(rating)
+        os.system('cls')
+    df['rating_class'] = ratings
+    return df
+
 def main():
     pages = get_viable_pages()
     print('\n', len(pages), 'found')
     df = get_pages_df(pages)
-    print(df)
+    classified_df = classify_df(df)
+    print(classified_df)
 main()
