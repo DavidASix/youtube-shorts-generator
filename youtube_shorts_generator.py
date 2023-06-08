@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import fandom
 import questionary
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
+# Working on new laptop
 
 def get_viable_pages():
     fandom_type = 'fallout'
