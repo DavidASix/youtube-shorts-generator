@@ -4,6 +4,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import fandom
 import questionary
+import mysql.connector
+
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 # Working on new laptop
 
@@ -113,12 +115,12 @@ def get_pages_df(pages):
             'url': [p['url']], 
             'first_section_title': [first_section_title],
             'categories':['|'.join(p['categories'])],
-            'length': [len(p['plain_text'])], 
+            'length': [len(p['plain_text'])],  # Change to total lenth
             'non_english': [p['non_english'] * 1],
             'file_page': [p['file_page'] * 1],
             'short_page': [p['short_page'] * 1],
             'first_section_length': [first_section_length], 
-            'target_words_found': [targetted_words_found],
+            'target_words_found': [targetted_words_found], # Change this to search all section titles, so what if the first one has it?
             'sections': [len(p['sections'])], 
             'images': [len(p['images'])],
             'audio': [len(p['audio'])]
@@ -140,10 +142,63 @@ def classify_df(df):
     df['rating_class'] = ratings
     return df
 
+def save_classified_df(df):
+    cxn = mysql.connector.connect()
+    crs = cxn.cursor()
+    crs.execute("SHOW DATABASES")
+
+    for x in crs:
+        print(x)
+
+def test(): 
+    # SSH tunnel configuration
+    ssh_host = 'your_ssh_host'
+    ssh_user = 'your_ssh_username'
+    ssh_password = 'your_ssh_password'
+    ssh_port = 22
+
+    # MySQL server configuration
+    mysql_host = 'your_mysql_host'
+    mysql_user = 'your_mysql_username'
+    mysql_password = 'your_mysql_password'
+    mysql_port = 3306
+
+    # Create an SSH tunnel connection
+    ssh_tunnel = connect(
+        host=ssh_host,
+        port=ssh_port,
+        username=ssh_user,
+        password=ssh_password,
+    )
+
+    # Create a MySQL connection through the SSH tunnel
+    mysql_connection = mysql.connector.connect(
+        host=mysql_host,
+        port=mysql_port,
+        user=mysql_user,
+        password=mysql_password,
+        database='your_database',
+        ssh=ssh_tunnel.get_transport(),
+    )
+
+    # Perform database operations
+    cursor = mysql_connection.cursor()
+    cursor.execute('SELECT * FROM your_table')
+    result = cursor.fetchall()
+    for row in result:
+        print(row)
+
+    # Close the connections
+    cursor.close()
+    mysql_connection.close()
+    ssh_tunnel.close()
+
+
 def main():
     pages = get_viable_pages()
     print('\n', len(pages), 'found')
     df = get_pages_df(pages)
     classified_df = classify_df(df)
     print(classified_df)
-main()
+
+save_classified_df('test')
