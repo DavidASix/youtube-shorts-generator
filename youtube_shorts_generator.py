@@ -143,7 +143,7 @@ def classify_df(df):
     return df
 
 def save_classified_df(df):
-    cxn = mysql.connector.connect()
+    cxn = mysql.connector.connect()#)
     crs = cxn.cursor()
     crs.execute("SHOW DATABASES")
 
