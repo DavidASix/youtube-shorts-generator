@@ -6,6 +6,8 @@ import fandom
 import questionary
 import mysql.connector
 
+import private as p
+
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 # Working on new laptop
 
@@ -142,56 +144,23 @@ def classify_df(df):
     df['rating_class'] = ratings
     return df
 
-def save_classified_df(df):
-    cxn = mysql.connector.connect()#)
-    crs = cxn.cursor()
-    crs.execute("SHOW DATABASES")
-
-    for x in crs:
-        print(x)
-
-def test(): 
-    # SSH tunnel configuration
-    ssh_host = 'your_ssh_host'
-    ssh_user = 'your_ssh_username'
-    ssh_password = 'your_ssh_password'
-    ssh_port = 22
-
-    # MySQL server configuration
-    mysql_host = 'your_mysql_host'
-    mysql_user = 'your_mysql_username'
-    mysql_password = 'your_mysql_password'
-    mysql_port = 3306
-
-    # Create an SSH tunnel connection
-    ssh_tunnel = connect(
-        host=ssh_host,
-        port=ssh_port,
-        username=ssh_user,
-        password=ssh_password,
-    )
-
-    # Create a MySQL connection through the SSH tunnel
+def mysql_test(): 
     mysql_connection = mysql.connector.connect(
-        host=mysql_host,
-        port=mysql_port,
-        user=mysql_user,
-        password=mysql_password,
-        database='your_database',
-        ssh=ssh_tunnel.get_transport(),
+        host=p.mysql['host'],
+        port=p.mysql['port'],
+        user=p.mysql['user'],
+        password=p.mysql['password'],
+        database='youtube_shorts_generator',
     )
 
-    # Perform database operations
     cursor = mysql_connection.cursor()
-    cursor.execute('SELECT * FROM your_table')
+    cursor.execute('SHOW DATABASES')
     result = cursor.fetchall()
     for row in result:
         print(row)
 
-    # Close the connections
     cursor.close()
     mysql_connection.close()
-    ssh_tunnel.close()
 
 
 def main():
@@ -201,4 +170,4 @@ def main():
     classified_df = classify_df(df)
     print(classified_df)
 
-save_classified_df('test')
+mysql_test()
