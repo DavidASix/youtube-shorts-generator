@@ -6,7 +6,7 @@ import fandom
 import questionary
 import mysql.connector
 
-import private as p
+import helpers as h
 
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 # Working on new laptop
@@ -145,22 +145,12 @@ def classify_df(df):
     return df
 
 def mysql_test(): 
-    mysql_connection = mysql.connector.connect(
-        host=p.mysql['host'],
-        port=p.mysql['port'],
-        user=p.mysql['user'],
-        password=p.mysql['password'],
-        database='youtube_shorts_generator',
-    )
-
-    cursor = mysql_connection.cursor()
-    cursor.execute('SHOW DATABASES')
-    result = cursor.fetchall()
+    db_engine = h.sql_connect()
+    db_engine['cursor'].execute('SHOW DATABASES')
+    result = db_engine['cursor'].fetchall()
     for row in result:
         print(row)
-
-    cursor.close()
-    mysql_connection.close()
+    h.sql_disconnect(db_engine)
 
 
 def main():
