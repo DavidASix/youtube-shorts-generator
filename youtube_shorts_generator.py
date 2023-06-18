@@ -88,17 +88,17 @@ def get_pages_df(pages):
     df = pd.DataFrame({
         'title': [],
         'url': [],
-        'first_section_title': [],
+        #'first_section_title': [],
         'categories': [],
         'non_english': [],
         'file_page': [],
         'short_page': [],
-        'length': [],
+        'total_length': [],
         'first_section_length': [],
-        'target_words_found': [],
-        'sections': [],
-        'images': [],
-        'audio': []
+        'target_words_in_section_titles': [],
+        'section_count': [],
+        'image_count': [],
+        'audio_count': []
         })
     for p in pages:
         #section_concat = ''.join(v for k, v in p['section_text'].items() if k.lower() != 'references')
@@ -107,25 +107,25 @@ def get_pages_df(pages):
         first_section_length = len(p['section_text'].get(first_section_title, ''))
         # Search the section titles for words that indicate the section might be rich in content creation text.
         targetted_section_words = ['background', 'description', 'lore', 'biography', 'overview', 'personality', 'history', 'context', 'backstory', 'origins', 'explanation', 'summary', 'synopsis', 'introduction']
-        targetted_words_found = 0
+        target_words_in_section_titles = 0
         for w in targetted_section_words:
             if w in '|'.join(p['sections']).lower():
-                targetted_words_found += 1
+                target_words_in_section_titles += 1
         
         new_row = pd.DataFrame({
             'title': [p['title']], 
             'url': [p['url']], 
-            'first_section_title': [first_section_title],
+            #'first_section_title': [first_section_title],
             'categories':['|'.join(p['categories'])],
-            'length': [len(p['plain_text'])],  # Change to total lenth
+            'total_length': [len(p['plain_text'])],  # Change to total lenth
             'non_english': [p['non_english'] * 1],
             'file_page': [p['file_page'] * 1],
             'short_page': [p['short_page'] * 1],
             'first_section_length': [first_section_length], 
-            'target_words_found': [targetted_words_found], # Change this to search all section titles, so what if the first one has it?
-            'sections': [len(p['sections'])], 
-            'images': [len(p['images'])],
-            'audio': [len(p['audio'])]
+            'target_words_in_section_titles': [target_words_in_section_titles], # Change this to search all section titles, so what if the first one has it?
+            'section_count': [len(p['sections'])], 
+            'image_count': [len(p['images'])],
+            'audio_count': [len(p['audio'])]
         })
         df = pd.concat([df, new_row], ignore_index=True)
     return df
@@ -152,6 +152,24 @@ def mysql_test():
         print(row)
     h.sql_disconnect(db_engine)
 
+def save_classified_df(classified_df):
+    # First get the maximum rank_group that currently exists
+    try:
+        db_engine = h.sql_connect()
+        db_engine['cursor'].execute('SELECT COALESCE(MAX(rank_group), 0) FROM youtube_shorts_generator.manual_page_classifications')
+        max_rank_group = db_engine['cursor'].fetchone()[0]
+        h.sql_disconnect(db_engine)
+    except Exception as e:
+        print('Error getting max rank_group', e)
+    # Assign the next consecutive rank_group as the new groups value
+    df = classified_df
+    df['rank_group'] = max_rank_group + 1
+    # Insert the new group
+    try:
+        h.insert_df(df, 'manual_page_classifications')
+    except Exception as e:
+        print('Error inserting classified df')
+        raise e
 
 def main():
     pages = get_viable_pages()
@@ -159,5 +177,7 @@ def main():
     df = get_pages_df(pages)
     classified_df = classify_df(df)
     print(classified_df)
+    save_classified_df(classified_df)
+    print(f'Inserted {len(classified_df)} new classified rows')
 
-mysql_test()
+main()
