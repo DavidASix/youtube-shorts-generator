@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import fandom
 import questionary
 
-import common.sql as sql
+from common.sql import sql
 
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 # Working on new laptop
@@ -17,7 +17,7 @@ def get_viable_pages():
     pages = []
     viable_pages = 0
     # Get a list of 10 random site pages 
-    while viable_pages < 10:
+    while viable_pages < 2:
         # Pages are returned as a tuple like (title, page_id)
         #r_pages = [('Paul_(Fallout)', 999)]
         p = fandom.random(1)[0]
@@ -144,20 +144,20 @@ def classify_df(df):
     return df
 
 def mysql_test(): 
-    db_engine = sql.sql_connect()
-    db_engine['cursor'].execute('SHOW DATABASES')
-    result = db_engine['cursor'].fetchall()
+    db_engine = sql()
+    db_engine.cursor.execute('SHOW DATABASES')
+    result = db_engine.cursor.fetchall()
     for row in result:
         print(row)
-    sql.sql_disconnect(db_engine)
+    db_engine.close()
 
 def save_classified_df(classified_df):
     # First get the maximum rank_group that currently exists
     try:
-        db_engine = sql.sql_connect()
-        db_engine['cursor'].execute('SELECT COALESCE(MAX(rank_group), 0) FROM youtube_shorts_generator.manual_page_classifications')
-        max_rank_group = db_engine['cursor'].fetchone()[0]
-        sql.sql_disconnect(db_engine)
+        db_engine = sql()
+        db_engine.cursor.execute('SELECT COALESCE(MAX(rank_group), 0) FROM youtube_shorts_generator.manual_page_classifications')
+        max_rank_group = db_engine.cursor.fetchone()[0]
+        db_engine.close()
     except Exception as e:
         print('Error getting max rank_group', e)
     # Assign the next consecutive rank_group as the new groups value
@@ -165,7 +165,8 @@ def save_classified_df(classified_df):
     df['rank_group'] = max_rank_group + 1
     # Insert the new group
     try:
-        sql.insert_df(df, 'manual_page_classifications')
+        db_engine = sql()
+        db_engine.insert_df(df, 'manual_page_classifications')
     except Exception as e:
         print('Error inserting classified df')
         raise e
