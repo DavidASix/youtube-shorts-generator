@@ -4,7 +4,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import fandom
 import questionary
-import mysql.connector
 
 import helpers as h
 
@@ -88,7 +87,6 @@ def get_pages_df(pages):
     df = pd.DataFrame({
         'title': [],
         'url': [],
-        #'first_section_title': [],
         'categories': [],
         'non_english': [],
         'file_page': [],
@@ -115,7 +113,6 @@ def get_pages_df(pages):
         new_row = pd.DataFrame({
             'title': [p['title']], 
             'url': [p['url']], 
-            #'first_section_title': [first_section_title],
             'categories':['|'.join(p['categories'])],
             'total_length': [len(p['plain_text'])],  # Change to total lenth
             'non_english': [p['non_english'] * 1],
@@ -134,6 +131,8 @@ def classify_df(df):
     print('\nNow you will classify the rows in this DF on viability')
     ratings = []
     for i, r in df.iterrows():
+        print('Issue Found' if r['non_english'] or r['file_page'] else 'Short' if r['short_page'] else 'Good')
+        print(r['target_words_in_section_titles'], 'Target Words.', r['section_count'], 'Sections')
         print(r)
         question = questionary.select(
             f'How would you rate {r["title"]}',
