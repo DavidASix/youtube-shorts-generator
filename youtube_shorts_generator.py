@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import fandom
 import questionary
 
-import helpers as h
+import common.sql as sql
 
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 # Working on new laptop
@@ -144,20 +144,20 @@ def classify_df(df):
     return df
 
 def mysql_test(): 
-    db_engine = h.sql_connect()
+    db_engine = sql.sql_connect()
     db_engine['cursor'].execute('SHOW DATABASES')
     result = db_engine['cursor'].fetchall()
     for row in result:
         print(row)
-    h.sql_disconnect(db_engine)
+    sql.sql_disconnect(db_engine)
 
 def save_classified_df(classified_df):
     # First get the maximum rank_group that currently exists
     try:
-        db_engine = h.sql_connect()
+        db_engine = sql.sql_connect()
         db_engine['cursor'].execute('SELECT COALESCE(MAX(rank_group), 0) FROM youtube_shorts_generator.manual_page_classifications')
         max_rank_group = db_engine['cursor'].fetchone()[0]
-        h.sql_disconnect(db_engine)
+        sql.sql_disconnect(db_engine)
     except Exception as e:
         print('Error getting max rank_group', e)
     # Assign the next consecutive rank_group as the new groups value
@@ -165,7 +165,7 @@ def save_classified_df(classified_df):
     df['rank_group'] = max_rank_group + 1
     # Insert the new group
     try:
-        h.insert_df(df, 'manual_page_classifications')
+        sql.insert_df(df, 'manual_page_classifications')
     except Exception as e:
         print('Error inserting classified df')
         raise e
@@ -186,5 +186,3 @@ def main():
             choices=['Yes', 'No'])
     next = next.ask()
     if (next == 'Yes'): main()
-
-main()

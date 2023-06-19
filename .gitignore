@@ -1,3 +1,4 @@
 __pycache__/
 
-private.py
+# Ignore all files named private.py in any directory
+**/private.py

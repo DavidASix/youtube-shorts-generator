@@ -1,6 +1,6 @@
 import mysql.connector
 
-import private as p
+import common.private as p
 
 def sql_connect(): 
     mysql_connection = mysql.connector.connect(
