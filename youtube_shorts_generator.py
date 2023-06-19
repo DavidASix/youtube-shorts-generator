@@ -18,7 +18,7 @@ def get_viable_pages():
     pages = []
     viable_pages = 0
     # Get a list of 10 random site pages 
-    while viable_pages < 2:
+    while viable_pages < 10:
         # Pages are returned as a tuple like (title, page_id)
         #r_pages = [('Paul_(Fallout)', 999)]
         p = fandom.random(1)[0]
@@ -136,7 +136,7 @@ def classify_df(df):
     for i, r in df.iterrows():
         print(r)
         question = questionary.select(
-            'How would you rate ' + r['title'],
+            f'How would you rate {r["title"]}',
             choices=['unusable', 'bad', 'fine', 'good', 'viral'])
         rating = question.ask()
         ratings.append(rating)
@@ -171,7 +171,7 @@ def save_classified_df(classified_df):
         print('Error inserting classified df')
         raise e
 
-def main():
+def manually_classify_pages():
     pages = get_viable_pages()
     print('\n', len(pages), 'found')
     df = get_pages_df(pages)
@@ -179,5 +179,13 @@ def main():
     print(classified_df)
     save_classified_df(classified_df)
     print(f'Inserted {len(classified_df)} new classified rows')
+
+def main():
+    manually_classify_pages()
+    next = questionary.select(
+            'Would you like to classify more?',
+            choices=['Yes', 'No'])
+    next = next.ask()
+    if (next == 'Yes'): main()
 
 main()
