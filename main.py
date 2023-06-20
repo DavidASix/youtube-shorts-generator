@@ -1,7 +1,9 @@
-import youtube_shorts_generator
+import manually_classify_pages
+import train_algorithm
 
 def main():
-    youtube_shorts_generator.main()
+    # manually_classify_pages.main()
+    train_algorithm.main()
 
 if __name__ == "__main__":
     main()
