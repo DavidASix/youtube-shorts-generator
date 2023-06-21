@@ -7,17 +7,18 @@ import questionary
 
 from common.sql import sql
 
+fandom_title = 'rickandmorty'
+
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 # Working on new laptop
 
 def get_viable_pages():
-    fandom_type = 'fallout'
-    fandom.set_wiki(fandom_type)
+    fandom.set_wiki(fandom_title)
 
     pages = []
     viable_pages = 0
     # Get a list of 10 random site pages 
-    while viable_pages < 2:
+    while viable_pages < 1:
         # Pages are returned as a tuple like (title, page_id)
         #r_pages = [('Paul_(Fallout)', 999)]
         p = fandom.random(1)[0]
@@ -73,7 +74,7 @@ def get_viable_pages():
 
             imgs = soup.find_all('img')
             output_page['images'] = [i['src'] for i in imgs if 
-                '.net/'+fandom_type in i['src'] 
+                '.net/'+fandom_title in i['src'] 
                 and 'icon' not in i['src']
                 and 'site-logo' not in i['src'].lower()]
 
@@ -152,6 +153,22 @@ def mysql_test():
     db_engine.close()
 
 def save_classified_df(classified_df):
+    # Check if the fandom has an entry in the niches table
+    print('saving DF')
+    try:
+        db_engine = sql()
+        db_engine.cursor.execute('SELECT id FROM niches WHERE title = %s', (fandom_title,))
+        fandom_id = db_engine.cursor.fetchone()
+        print('FandomID', fandom_id)
+        if fandom_id is None:
+            # Fandom ID does not exist, insert it
+            db_engine.insert_df(pd.DataFrame({'title': [fandom_title]}), 'niches')
+            db_engine.cursor.execute('SELECT * FROM niches WHERE title = %s', (fandom_title,))
+            fandom_id = db_engine.cursor.fetchone()
+        fandom_id = fandom_id[0]
+        db_engine.close()
+    except Exception as e:
+        print('Error getting fandom_id', e)
     # First get the maximum rank_group that currently exists
     try:
         db_engine = sql()
@@ -163,6 +180,7 @@ def save_classified_df(classified_df):
     # Assign the next consecutive rank_group as the new groups value
     df = classified_df
     df['rank_group'] = max_rank_group + 1
+    df['niche_id'] = fandom_id
     # Insert the new group
     try:
         db_engine = sql()
