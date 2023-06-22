@@ -27,23 +27,46 @@ class MediaWiki(object):
             print(e)
 
     def get_page_information(self, id):
-        params = {**self.params, "pageids": id, "prop": "info", "inprop": "displaytitle|url"}
-        try:
-            print(params)
-            # Get list of available images
-            res = requests.get(self.url, params=params)
-            res = res.json()
-            res = res['query']['pages'][str(id)]
-            page = {
-              'id': res['pageid'],
-              'title': res['displaytitle'],
-              'url': res['fullurl'],
-              'length': res['length']
-            }
-            return page
-        except Exception as e:
-            print('Error', e)
-
+      params = {**self.params, "pageids": id, "prop": "info", "inprop": "displaytitle|url"}
+      page = {}
+      # Get basic information about the page
+      try:
+          res = requests.get(self.url, params=params)
+          res = res.json()
+          res = res['query']['pages'][str(id)]
+          page.update({
+            'id': res['pageid'],
+            'title': res['displaytitle'],
+            'url': res['fullurl'],
+            'length': res['length']
+          })
+      except Exception as e:
+          print('Error', e)
+      # Get the categories for this article
+      params = {**self.params, "action": "query", "pageids": id, "prop": "categories"}
+      try:
+        res = requests.get(self.url, params=params)
+        res = res.json()
+        res = res['query']['pages'][str(id)]['categories']
+        res = [cat['title'][9:] for cat in res]
+        print(res)
+        page.update({'categories': res})
+      except Exception as e:
+        print('Error', e)
+      
+      # Get the sections for this article
+      # Drop any subsections, only look for top level sections
+      params = {**self.params, "action": "parse", "pageid": id, "prop": "sections"}
+      try:
+        res = requests.get(self.url, params=params)
+        res = res.json()
+        res = res['parse']['sections']
+        res = [sec['line'] for sec in res if sec['toclevel'] == 1]
+        page.update({'sections': res})
+      except Exception as e:
+        print('Error', e)
+      return page
+    
     def get_infobox(self, id):
       params = {**self.params, "pageids": id, "prop": "revisions", "rvprop": "content"}
       # Get the target pages most recent revision & content
@@ -145,23 +168,24 @@ random_page = wiki.random_pages()[0]
 
 id = random_page['id']
 #id = 530985
-id = 609357
-page_content = wiki.get_page_content(id)
+#id = 609357
+id= 483525
+page_content = wiki.get_page_information(id)
 print(f'ID is {id}')
+print(page_content)
 #print(page_content)
-print(page_content['infoBox'])
-print(page_content['content'])
+#print(page_content['infoBox'])
 
 # data to get:
 
-# title       api
-# url         api
-# sections    api 
-# categories  api
-# audio       tbd
-# images      api
-# summary     parse 
-# short_page  parse   
-# non_english api 
-# file_page   parse 
-# plain_text  parse 
+# title       api ✅
+# url         api ✅
+# sections    api ✅
+# categories  api ✅
+# audio       tbd 
+# images      api   ✅
+# summary     parse ✅
+# length      parse ✅
+# non_english api   ✅
+# file_page   parse ✅
+# plain_text  parse ✅
