@@ -25,6 +25,18 @@ class MediaWiki(object):
         except Exception as e:
             print(e)
 
+    def get_page_information(self, id):
+        params = {**self.params, "prop": "pageviews", "pageids": id}
+        try:
+            print(params)
+            # Get list of available images
+            res = requests.get(self.url, params=params)
+            res = res.json()
+            print(res)
+        except Exception as e:
+            print('Error', e)
+
+
     # Get information about a page via its id
     def get_page_images(self, id):
         params = {**self.params, "prop": "images", "pageids": id}
@@ -62,3 +74,17 @@ id = random_page['id']
 id = 530985
 page_images = wiki.get_page_images(id)
 print('pageinfo:', page_images)
+
+# data to get:
+
+# title       api
+# url         api
+# sections    api 
+# categories  api
+# audio       tbd
+# images      api
+# summary     parse 
+# short_page  parse   
+# non_english api 
+# file_page   parse 
+# plain_text  parse 
