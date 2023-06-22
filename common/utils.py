@@ -10,5 +10,4 @@ def get_curly_content(content):
         if open_brackets == 0:
             end_pos = i
             break
-    print(string)
     return string[1:end_pos]
