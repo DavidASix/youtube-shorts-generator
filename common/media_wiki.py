@@ -48,13 +48,13 @@ class MediaWiki(object):
       params = {**self.params, "pageids": id, "prop": "revisions", "rvprop": "content"}
       # Get the target pages most recent revision & content
       try:
-          print(params)
           # Get list of available images
           res = requests.get(self.url, params=params)
           res = res.json()
           content = res['query']['pages'][str(id)]['revisions'][0]["*"]
       except Exception as e:
           print('Error', e)
+          return None
       # Get the contents of the infoBox if one exists
       if "{{Infobox" in content:
         # Parse the content for infobox details:
@@ -73,7 +73,6 @@ class MediaWiki(object):
         # Loop through the KV pairs and add to the dictionary
         for pair in pairs:
             # Split each pair by '='
-            print(pair)
             p = pair.split('=', 1)
             if len(p) < 2:
               # Key does not have a value pair, or parsing failed on this pair
@@ -92,12 +91,21 @@ class MediaWiki(object):
       params = {**self.params, "pageids": id, "prop": "revisions", "rvprop": "content"}
       # Get the target pages most recent revision & content
       try:
-          print(params)
           # Get list of available images
           res = requests.get(self.url, params=params)
           res = res.json()
           content = res['query']['pages'][str(id)]['revisions'][0]["*"]
-          infoBox = self.get_infobox(id)
+          # check if there is an info box. If so, grab it's information and delete it from the content
+          infoBox = None
+          if "{{Infobox" in content:
+            infoBox = self.get_infobox(id)
+            # Parse the content for infobox details:
+            infoBoxStartInd = "{{Infobox"
+            infoBoxString = content[content.find(infoBoxStartInd):]
+            infoBoxString = u.get_curly_content(infoBoxString)
+            infoBoxString = u.get_curly_content(infoBoxString)
+            content = content.replace('{{'+infoBoxString+'}}', '')
+
           return {'infoBox': infoBox, 'content': content}
       except Exception as e:
           print('Error', e)
@@ -136,9 +144,13 @@ random_page = wiki.random_pages()[0]
 #print(random_page)
 
 id = random_page['id']
-id = 530985
+#id = 530985
+id = 609357
 page_content = wiki.get_page_content(id)
-print('pageinfo:', page_content)
+print(f'ID is {id}')
+#print(page_content)
+print(page_content['infoBox'])
+print(page_content['content'])
 
 # data to get:
 
