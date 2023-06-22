@@ -1,7 +1,7 @@
 import requests
 import re
 # https://en.wikipedia.org/w/api.php
-
+import common.utils as u
 
 class MediaWiki(object):
     def __init__(self, wiki, lang='en'):
@@ -44,16 +44,61 @@ class MediaWiki(object):
         except Exception as e:
             print('Error', e)
 
-    def get_page_content(self, id):
+    def get_infobox(self, id):
       params = {**self.params, "pageids": id, "prop": "revisions", "rvprop": "content"}
+      # Get the target pages most recent revision & content
       try:
           print(params)
           # Get list of available images
           res = requests.get(self.url, params=params)
           res = res.json()
-          res = res['query']['pages'][str(id)]['revisions'][0]["*"]
-          print(res)
-          return res
+          content = res['query']['pages'][str(id)]['revisions'][0]["*"]
+      except Exception as e:
+          print('Error', e)
+      # Get the contents of the infoBox if one exists
+      if "{{Infobox" in content:
+        # Parse the content for infobox details:
+        infoBoxStartInd = "{{Infobox"
+        infoBoxString = content[content.find(infoBoxStartInd):]
+        infoBoxString = u.get_curly_content(infoBoxString)
+        infoBoxString = u.get_curly_content(infoBoxString)
+        # Parse infobox data into dictionary
+        result = {}
+        # Find all | chars that are not contained within curly brackets
+        pattern = r'\|(?![^{}]*})'
+        # Replace delimiter bars with new delimiter
+        delimiter = '|||'
+        infoBoxString = re.sub(pattern, delimiter, infoBoxString)  
+        pairs = infoBoxString.split(delimiter)
+        # Loop through the KV pairs and add to the dictionary
+        for pair in pairs:
+            # Split each pair by '='
+            print(pair)
+            p = pair.split('=', 1)
+            if len(p) < 2:
+              # Key does not have a value pair, or parsing failed on this pair
+              # Should raise a warning?
+              continue
+            key, value = p
+            # remove trailing white spaces
+            key = key.strip()
+            value = value.strip().strip('\n')
+            result[key] = value
+        return result
+      else:
+        return None
+
+    def get_page_content(self, id):
+      params = {**self.params, "pageids": id, "prop": "revisions", "rvprop": "content"}
+      # Get the target pages most recent revision & content
+      try:
+          print(params)
+          # Get list of available images
+          res = requests.get(self.url, params=params)
+          res = res.json()
+          content = res['query']['pages'][str(id)]['revisions'][0]["*"]
+          infoBox = self.get_infobox(id)
+          return {'infoBox': infoBox, 'content': content}
       except Exception as e:
           print('Error', e)
 
@@ -92,8 +137,8 @@ random_page = wiki.random_pages()[0]
 
 id = random_page['id']
 id = 530985
-page_info = wiki.get_page_information(id)
-print('pageinfo:', page_info)
+page_content = wiki.get_page_content(id)
+print('pageinfo:', page_content)
 
 # data to get:
 
