@@ -1,4 +1,5 @@
 import requests
+import re
 # https://en.wikipedia.org/w/api.php
 
 
@@ -26,16 +27,35 @@ class MediaWiki(object):
             print(e)
 
     def get_page_information(self, id):
-        params = {**self.params, "prop": "pageviews", "pageids": id}
+        params = {**self.params, "pageids": id, "prop": "info", "inprop": "displaytitle|url"}
         try:
             print(params)
             # Get list of available images
             res = requests.get(self.url, params=params)
             res = res.json()
-            print(res)
+            res = res['query']['pages'][str(id)]
+            page = {
+              'id': res['pageid'],
+              'title': res['displaytitle'],
+              'url': res['fullurl'],
+              'length': res['length']
+            }
+            return page
         except Exception as e:
             print('Error', e)
 
+    def get_page_content(self, id):
+      params = {**self.params, "pageids": id, "prop": "revisions", "rvprop": "content"}
+      try:
+          print(params)
+          # Get list of available images
+          res = requests.get(self.url, params=params)
+          res = res.json()
+          res = res['query']['pages'][str(id)]['revisions'][0]["*"]
+          print(res)
+          return res
+      except Exception as e:
+          print('Error', e)
 
     # Get information about a page via its id
     def get_page_images(self, id):
@@ -72,8 +92,8 @@ random_page = wiki.random_pages()[0]
 
 id = random_page['id']
 id = 530985
-page_images = wiki.get_page_images(id)
-print('pageinfo:', page_images)
+page_info = wiki.get_page_information(id)
+print('pageinfo:', page_info)
 
 # data to get:
 
