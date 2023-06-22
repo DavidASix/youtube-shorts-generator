@@ -49,7 +49,6 @@ class MediaWiki(object):
         res = res.json()
         res = res['query']['pages'][str(id)]['categories']
         res = [cat['title'][9:] for cat in res]
-        print(res)
         page.update({'categories': res})
       except Exception as e:
         print('Error', e)
@@ -137,11 +136,9 @@ class MediaWiki(object):
     def get_page_images(self, id):
         params = {**self.params, "prop": "images", "pageids": id}
         try:
-            print(params)
             # Get list of available images
             res = requests.get(self.url, params=params)
             res = res.json()
-            print(res)
             # Join titles of list as new request params
             images = res['query']['pages'][str(id)]['images']
             images = '|'.join([img['title'] for img in images])
@@ -159,33 +156,3 @@ class MediaWiki(object):
             return image_details
         except Exception as e:
             print('Error', e)
-
-
-wiki = MediaWiki('fallout')
-
-random_page = wiki.random_pages()[0]
-#print(random_page)
-
-id = random_page['id']
-#id = 530985
-#id = 609357
-id= 483525
-page_content = wiki.get_page_information(id)
-print(f'ID is {id}')
-print(page_content)
-#print(page_content)
-#print(page_content['infoBox'])
-
-# data to get:
-
-# title       api ✅
-# url         api ✅
-# sections    api ✅
-# categories  api ✅
-# audio       tbd 
-# images      api   ✅
-# summary     parse ✅
-# length      parse ✅
-# non_english api   ✅
-# file_page   parse ✅
-# plain_text  parse ✅
