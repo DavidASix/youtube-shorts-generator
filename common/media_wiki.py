@@ -1,5 +1,6 @@
 import requests
 import re
+from bs4 import BeautifulSoup
 # https://en.wikipedia.org/w/api.php
 import common.utils as u
 
@@ -156,3 +157,14 @@ class MediaWiki(object):
           return image_details
       except Exception as e:
         print(e)
+        
+  def get_page_audio_files(self, id):
+    try:
+      page = self.get_page_information(id)
+      res = requests.get(page['url'])
+      soup = BeautifulSoup(res.text, 'html.parser')
+      # Audio file urls
+      audio = soup.find_all('audio')
+      return [a['src'] for a in audio]
+    except Exception as e:
+      print('error', e)
