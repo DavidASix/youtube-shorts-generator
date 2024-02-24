@@ -21,8 +21,9 @@ def get_viable_pages():
             output_page = {}
             # Pull a random wiki page and get its basic info
             p = wiki.random_pages(1)[0]
-            
+
             page = wiki.get_page_information(p['id'])
+            print("Page {} {}".format(len(pages), page['url']))
             # Pages should be long enough for a 30 second video, and should not be about game files
             short_page = page['length'] < 1000
             # Find pages with titles like 'abc.mp3' to avoid file related pages
