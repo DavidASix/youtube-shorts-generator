@@ -4,7 +4,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, r
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
 from scipy.stats import randint
 
-from common.sql import sql
+from common.mysql import sql
 
 
 def get_sample_df():
