@@ -91,11 +91,11 @@ def get_pages_df(pages):
             'non_english': [p['lang'] != 'en' * 1],
             'file_page': [p['file_page'] * 1],
             'short_page': [p['short_page'] * 1],
-            'total_length': [len(p['plain_text'])],  # Change to total lenth
+            'total_length': [len(p['plain_text']) if p['plain_text'] else 0],  # Change to total lenth
             'target_words_in_section_titles': [target_words_in_section_titles], # Change this to search all section titles, so what if the first one has it?
-            'section_count': [len(p['sections'])], 
-            'image_count': [len(p['images'])],
-            'audio_count': [len(p['audio'])]
+            'section_count': [len(p['sections']) if p['sections'] else 0], 
+            'image_count': [len(p['images']) if p['images'] else 0],
+            'audio_count': [len(p['audio']) if p['audio'] else 0]
         })
         df = pd.concat([df, new_row], ignore_index=True)
     return df
