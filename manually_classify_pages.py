@@ -5,7 +5,6 @@ import sqlite3
 import questionary
 from pprint import pprint
 from common.media_wiki import MediaWiki
-from common.mysql import sql
 
 fandom_title = 'fallout'
 
