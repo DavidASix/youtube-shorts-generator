@@ -5,17 +5,18 @@ import sqlite3
 import questionary
 from pprint import pprint
 from common.media_wiki import MediaWiki
+import os
 
 fandom_title = 'fallout'
 
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 # Working on new laptop
 
-def get_viable_pages():
+def get_viable_pages(pages_to_get=10):
     wiki = MediaWiki(fandom_title, 'en')
     pages = []
     # Get a list of 10 random site pages 
-    while len(pages) < 10:
+    while len(pages) < pages_to_get:
         try:
             output_page = {}
             # Pull a random wiki page and get its basic info
@@ -122,7 +123,10 @@ def classify_df(df):
     return df
 
 def save_classified_df(classified_df):
-    conn = sqlite3.connect('ytsg-dataset.db')
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    parent_dir_path = os.path.dirname(dir_path)
+    dataset_path = os.path.join(parent_dir_path, 'ytsg-dataset.db')
+    conn = sqlite3.connect(dataset_path)
     cursor = conn.cursor()
 
     # Check if the fandom has an entry in the niches table
