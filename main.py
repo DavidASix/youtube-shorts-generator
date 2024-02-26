@@ -1,4 +1,4 @@
-import manually_classify_pages
+import page_classification.manually_classify_pages as manually_classify_pages
 #import train_algorithm
 import common.media_wiki as media_wiki
 
