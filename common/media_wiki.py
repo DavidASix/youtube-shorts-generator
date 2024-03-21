@@ -26,6 +26,7 @@ class MediaWiki(object):
       params = {"format": "json", "action": "query",
                 "list": "random", "rnlimit": pages, "rnnamespace": 0}
       try:
+          print(f'Getting {pages} random pages')
           res = requests.get(self.url, params=params)
           res = res.json()
           return res['query']['random']
@@ -42,6 +43,7 @@ class MediaWiki(object):
     page = {}
     # Get basic information about the page
     try:
+        print(f'Getting basic information for {id}')
         res = requests.get(self.url, params=params)
         res = res.json()
         res = res['query']['pages'][str(id)]
@@ -86,6 +88,7 @@ class MediaWiki(object):
     ##############
     # This initial parse gets basic information, from a previous iteration of the project
     ##############
+    print(f'Getting classifier information for {id}')
     output_page = {}
     page = self.get_page_information(id)
     # Pages should be long enough for a 30 second video, and should not be about game files
