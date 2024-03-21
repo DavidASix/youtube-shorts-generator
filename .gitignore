@@ -141,3 +141,5 @@ ui-tests/.pnp.*
 # Ignore all files named private.py in any directory
 **/private.py
 scratch.py
+
+.env
