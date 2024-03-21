@@ -15,6 +15,11 @@ class MediaWiki(object):
 
   # Return an array of random pages
   def random_pages(self, pages=1):
+      """
+      This function returns an array of random pages
+      Args:
+        pages: number of random pages to find, default to one.
+      """
       # Params are appended as url encoded query
       # rnnamespace refers to the content being queried. 0 is pages, 1 is talks, 2 is users, 6 is files, etc. Find more at the api docs
       # https://en.wikipedia.org/w/api.php?action=help&modules=query%2Brandom
@@ -28,6 +33,11 @@ class MediaWiki(object):
           print(e)
 
   def get_page_information(self, id):
+    """
+      This function returns the basic barebones information about a media_wiki page
+      Args:
+        id: a media wiki page id
+    """
     params = {**self.params, "pageids": id, "prop": "info", "inprop": "displaytitle|url"}
     page = {}
     # Get basic information about the page
@@ -66,7 +76,41 @@ class MediaWiki(object):
     except Exception as e:
       print('Error', e)
     return page
-    
+  
+  def parse_page_classification_information(self, id):
+    """
+      This returns the information needed to classify it by the ML engine
+      Args:
+        id: Media wiki page id
+    """
+    output_page = {}
+    page = self.get_page_information(id)
+    # Pages should be long enough for a 30 second video, and should not be about game files
+    short_page = page['length'] < 1000
+    # Find pages with titles like 'abc.mp3' to avoid file related pages
+    file_page = re.match(r".+\..{2,}", page['title']) != None
+    # Get page content
+    page_content = self.get_page_content(id)
+    page_images = self.get_page_images(id)
+    page_audio = self.get_page_audio_files(id)
+
+    # Start adding to output file object
+    output_page.update({
+        'id': id,
+        'lang': 'en',
+        'title': page['title'], 
+        'url': page['url'], 
+        'sections': page['sections'],
+        'categories': page['categories'],
+        'short_page': short_page,
+        'file_page': file_page,
+        'plain_text': page_content['content'], 
+        'infobox': page_content['infobox'], 
+        'images': page_images,
+        'audio': page_audio
+    })
+    return output_page
+
   def get_infobox(self, id):
     params = {**self.params, "pageids": id, "prop": "revisions", "rvprop": "content"}
     # Get the target pages most recent revision & content

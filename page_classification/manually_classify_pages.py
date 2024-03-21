@@ -18,36 +18,9 @@ def get_viable_pages(pages_to_get=10):
     # Get a list of 10 random site pages 
     while len(pages) < pages_to_get:
         try:
-            output_page = {}
-            # Pull a random wiki page and get its basic info
-            p = wiki.random_pages(1)[0]
-
-            page = wiki.get_page_information(p['id'])
-            print("Page {} {}".format(len(pages), page['url']))
-            # Pages should be long enough for a 30 second video, and should not be about game files
-            short_page = page['length'] < 1000
-            # Find pages with titles like 'abc.mp3' to avoid file related pages
-            file_page = re.match(r".+\..{2,}", page['title']) != None
-            # Get page content
-            page_content = wiki.get_page_content(p['id'])
-            page_images = wiki.get_page_images(p['id'])
-            page_audio = wiki.get_page_audio_files(p['id'])
-
-            # Start adding to output file object
-            output_page.update({
-                'id': p['id'],
-                'lang': 'en',
-                'title': page['title'], 
-                'url': page['url'], 
-                'sections': page['sections'],
-                'categories': page['categories'],
-                'short_page': short_page,
-                'file_page': file_page,
-                'plain_text': page_content['content'], 
-                'infobox': page_content['infobox'], 
-                'images': page_images,
-                'audio': page_audio
-            })
+            # Pull a random wiki page and get its id
+            id = wiki.random_pages()[0]['id']
+            output_page = wiki.parse_page_classification_information(id)
             pages.append(output_page)
         except Exception as e:
             print(e)
