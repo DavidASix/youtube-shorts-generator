@@ -12,66 +12,21 @@ fandom_title = 'fallout'
 # https://fandom-py.readthedocs.io/en/latest/fandom.html
 # Working on new laptop
 
-def get_viable_pages(pages_to_get=10):
+def get_pages_to_classify(pages_to_get=10):
     wiki = MediaWiki(fandom_title, 'en')
-    pages = []
+    columns = ['page_id', 'title', 'url', 'categories', 'sections', 'non_english', 'file_page', 'short_page', 'total_length', 'target_words_in_section_titles', 'section_count', 'image_count', 'audio_count']
+    df = pd.DataFrame(columns=columns)
     # Get a list of 10 random site pages 
-    while len(pages) < pages_to_get:
+    while len(df) < pages_to_get:
         try:
             # Pull a random wiki page and get its id
             id = wiki.random_pages()[0]['id']
+            print(f'Getting page {id}')
             output_page = wiki.parse_page_classification_information(id)
-            pages.append(output_page)
+            df = pd.concat([df, pd.DataFrame([output_page])], ignore_index=True)
         except Exception as e:
             print(e)
     # Return the list of viable pages
-    return pages
-
-def get_pages_df(pages):
-    df = pd.DataFrame({
-        'page_id': [],
-        'title': [],
-        'url': [],
-        'categories': [],
-        'sections': [],
-        'non_english': [],
-        'file_page': [],
-        'short_page': [],
-        'total_length': [],
-        'target_words_in_section_titles': [],
-        'section_count': [],
-        'image_count': [],
-        'audio_count': [],
-        #'infobox_value_count': []
-        })
-    for p in pages:
-        #section_concat = ''.join(v for k, v in p['section_text'].items() if k.lower() != 'references')
-        #overview_length = len(p['plain_text']) - len(section_concat)
-        #first_section_title = p['sections'][0] if len(p['sections']) > 0 else ''
-        #first_section_length = 0#len(p['section_text'].get(first_section_title, ''))
-        # Search the section titles for words that indicate the section might be rich in content creation text.
-        targetted_section_words = ['background', 'description', 'lore', 'biography', 'overview', 'personality', 'history', 'context', 'backstory', 'origins', 'explanation', 'summary', 'synopsis', 'introduction']
-        target_words_in_section_titles = 0
-        for w in targetted_section_words:
-            if w in '|'.join(p['sections']).lower():
-                target_words_in_section_titles += 1
-        
-        new_row = pd.DataFrame({
-            'page_id': [p['id']],
-            'title': [p['title']],
-            'url': [p['url']], 
-            'categories':['||'.join(p['categories'])],
-            'sections': ['||'.join(p['sections']).lower()],
-            'non_english': [p['lang'] != 'en' * 1],
-            'file_page': [p['file_page'] * 1],
-            'short_page': [p['short_page'] * 1],
-            'total_length': [len(p['plain_text']) if p['plain_text'] else 0],  # Change to total lenth
-            'target_words_in_section_titles': [target_words_in_section_titles], # Change this to search all section titles, so what if the first one has it?
-            'section_count': [len(p['sections']) if p['sections'] else 0], 
-            'image_count': [len(p['images']) if p['images'] else 0],
-            'audio_count': [len(p['audio']) if p['audio'] else 0]
-        })
-        df = pd.concat([df, new_row], ignore_index=True)
     return df
 
 def classify_df(df):
@@ -161,8 +116,7 @@ def save_classified_df(classified_df):
     conn.close()
 
 def manually_classify_pages():
-    pages = get_viable_pages()
-    df = get_pages_df(pages)
+    df = get_pages_to_classify()
     classified_df = classify_df(df)
     save_classified_df(classified_df)
     print(f'Inserted {len(classified_df)} new classified rows')

@@ -83,6 +83,9 @@ class MediaWiki(object):
       Args:
         id: Media wiki page id
     """
+    ##############
+    # This initial parse gets basic information, from a previous iteration of the project
+    ##############
     output_page = {}
     page = self.get_page_information(id)
     # Pages should be long enough for a 30 second video, and should not be about game files
@@ -109,6 +112,41 @@ class MediaWiki(object):
         'images': page_images,
         'audio': page_audio
     })
+    
+    ##############
+    # This second pass aggregates the information for entry into a database
+    # These two steps should be done one, but I wrote them seperately and don't want 
+    # to combine them right now
+    ##############
+
+    #section_concat = ''.join(v for k, v in p['section_text'].items() if k.lower() != 'references')
+    #overview_length = len(p['plain_text']) - len(section_concat)
+    #first_section_title = p['sections'][0] if len(p['sections']) > 0 else ''
+    #first_section_length = 0#len(p['section_text'].get(first_section_title, ''))
+    # Search the section titles for words that indicate the section might be rich in content creation text.
+    
+    targetted_section_words = ['background', 'description', 'lore', 'biography', 'overview', 'personality', 'history', 'context', 'backstory', 'origins', 'explanation', 'summary', 'synopsis', 'introduction']
+    target_words_in_section_titles = 0
+    for w in targetted_section_words:
+        if w in '|'.join(output_page['sections']).lower():
+            target_words_in_section_titles += 1
+
+    output_page = {
+        'page_id': output_page['id'],
+        'title': output_page['title'],
+        'url': output_page['url'], 
+        'categories': '||'.join(output_page['categories']),
+        'sections': '||'.join(output_page['sections']).lower(),
+        'non_english': output_page['lang'] != 'en' * 1,
+        'file_page': output_page['file_page'] * 1,
+        'short_page': output_page['short_page'] * 1,
+        'total_length': len(output_page['plain_text']) if output_page['plain_text'] else 0,  
+        'target_words_in_section_titles': target_words_in_section_titles, 
+        'section_count': len(output_page['sections']) if output_page['sections'] else 0, 
+        'image_count': len(output_page['images']) if output_page['images'] else 0,
+        'audio_count': len(output_page['audio']) if output_page['audio'] else 0
+    }
+
     return output_page
 
   def get_infobox(self, id):
