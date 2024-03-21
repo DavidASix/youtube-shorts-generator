@@ -1,70 +1,51 @@
-import page_classification.manually_classify_pages as manually_classify_pages
 import pickle
 import sqlite3
-import questionary
-import pandas as pd
 import os
 
-def get_classified_pages():
-    # Load the manually_classify_pages module
-    pages = manually_classify_pages.get_viable_pages(1)
+from common.media_wiki import MediaWiki
+fandom_title = 'fallout'
 
-    # Get the dataframe from the pages
-    df = manually_classify_pages.get_pages_df(pages)
+class PageClassifier:
+    def __init__(self, fandom_title='fallout'):
+        self.fandom_title = fandom_title
+        self.model = None
+        self.feature_columns = [
+            'total_length',
+            'file_page',
+            'target_words_in_section_titles',
+            'category_count',
+            'image_count',
+        ]
+        self.load_model()
 
-    # Add a new column 'category_count' that contains the count of the substring '||' in the 'categories' column plus one
-    df['category_count'] = df['categories'].apply(lambda x: x.count('||') + 1)
-
-    # Specify the feature columns
-    feature_columns = [
-        'total_length',
-        'file_page',
-        'target_words_in_section_titles',
-        'category_count',
-        'image_count',
-    ]
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    model_path = os.path.join(dir_path, 'random_forest_model.pkl')
-    # Load the random forest model from the pickle file
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
-
-    # Run the dataframe through the model
-    predictions = model.predict(df[feature_columns])
-
-    # Print the predictions
-    print(predictions)
-    df['rating_class'] = predictions
-    return df
-
-# Function to add DF to model_page_classifications table
-def add_df_to_table(df):
-    # Connect to the database
-    try:
-        print(df)
+    def load_model(self):
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        parent_dir_path = os.path.dirname(dir_path)
-        dataset_path = os.path.join(parent_dir_path, 'ytsg-dataset.db')
-        conn = sqlite3.connect(dataset_path)
-        df.to_sql("model_page_classifications", conn, if_exists="append", index=False)
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print('Error inputting data', e)
+        model_path = os.path.join(dir_path, 'random_forest_model.pkl')
+        with open(model_path, 'rb') as f:
+            self.model = pickle.load(f)
 
-# Function to rerun the script based on user input
-def conditionally_rerun_script():
-    answer = questionary.confirm("Do you want to rerun the script?").ask()
-    if answer:
-        # Call the main function again
-        main()
-    else:
-        print("Script not rerun.")
+    def classify_page(self, id):
+        wiki = MediaWiki(self.fandom_title, 'en')
+        output_page = wiki.parse_page_classification_information(id)
 
-def main():
-    df = get_classified_pages()
-    add_df_to_table(df)
-    conditionally_rerun_script()
+        output_page['category_count'] = output_page['categories'].count('||') + 1
 
-if __name__  == "__main__":
-    main()
+        predictions = self.model.predict([[output_page[col] for col in self.feature_columns]])
+        print(predictions)
+        output_page['rating_class'] = predictions[0]
+        return output_page
+
+    # Function to add DF to model_page_classifications table
+    def add_df_to_table(df):
+        # Connect to the database
+        try:
+            print(df)
+            dir_path = os.path.dirname(os.path.realpath(__file__))
+            parent_dir_path = os.path.dirname(dir_path)
+            dataset_path = os.path.join(parent_dir_path, 'ytsg-dataset.db')
+            conn = sqlite3.connect(dataset_path)
+            df.to_sql("model_page_classifications", conn, if_exists="append", index=False)
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print('Error inputting data', e)
