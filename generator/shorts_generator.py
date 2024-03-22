@@ -5,11 +5,16 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 from pprint import pprint
+from pathlib import Path
+from openai import OpenAI
+from pydub import AudioSegment
+from pydub.effects import speedup
 
 class ShortsGenerator:
-    def __init__(self, media_wiki_id, media_wiki_title, fandom):
+    def __init__(self, media_wiki_id, media_wiki_title, url, fandom):
         self.media_wiki_id = media_wiki_id
         self.media_wiki_title = media_wiki_title
+        self.url = url
         self.fandom = fandom
 
         self.google_images = None
@@ -61,3 +66,51 @@ class ShortsGenerator:
             img = Image.open(BytesIO(response.content))
             img = img.convert('RGB')
             img.save(image_path)
+    
+    def get_script(self):
+        api_key = os.getenv('OPENAI_API_KEY')
+        client = OpenAI(api_key=api_key)
+        with open('./generator/assistant-instructions.txt', 'r') as f:
+            assistant_instructions = f.read()
+        # Call to Open AI for script
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            max_tokens=1280,
+            temperature=1.4,
+            messages=[
+                {"role": "system", "content": assistant_instructions},
+                {"role": "user", "content": self.url}
+            ]
+        )
+        response = completion.choices[0].message.content
+        response = response.replace("-", ",")
+
+        return response
+
+    def create_voice_over(self, script):
+        print('Attempting to generate voiceover')
+        # Get Audio
+        api_key = os.getenv('OPENAI_API_KEY')
+        client = OpenAI(api_key=api_key)
+
+        speech_file_path = f'generator/assets/voiceover.mp3'
+        response = client.audio.speech.create(
+            model="tts-1-hd",
+            voice="echo",
+            input=script
+        )
+
+        response.stream_to_file(speech_file_path)
+
+        # If required, shorten audio while maintaining pitch
+        audio = AudioSegment.from_mp3("generator/assets/voiceover.mp3")
+        # Check if the audio is longer than 55 seconds
+        if audio.duration_seconds > 55:
+            # Calculate the speedup factor
+            speedup_factor = audio.duration_seconds / 55
+            print(f'speed factor {speedup_factor}')
+            # Speed up the audio
+            audio = speedup(audio, playback_speed=speedup_factor)
+
+        # Save the audio
+        audio.export("generator/assets/voiceover.mp3", format="mp3")
